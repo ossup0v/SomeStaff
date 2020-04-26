@@ -18,7 +18,7 @@ namespace App.Common.Managers
         case IdKind.Chat:
           _chatIdCounter++;
           return _chatIdCounter;
-        case IdKind.ChatInvate:
+        case IdKind.Invate:
           _chatInvateIdCounter++;
           return _chatInvateIdCounter;
         default:

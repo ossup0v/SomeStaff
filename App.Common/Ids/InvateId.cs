@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace App.Common.Ids
 {
-  public class ChatInvateId : BaseId
+  public class InvateId<TOwnerId> : BaseId
   {
-    public UserId By { get; private set; }
-    public UserId To { get; private set; }
+    public TOwnerId By { get; private set; }
+    public TOwnerId To { get; private set; }
 
-    public ChatInvateId(UserId by, UserId to) : base(IdKind.ChatInvate)
+    public InvateId(TOwnerId by, TOwnerId to) : base(IdKind.Invate)
     { By = by; To = to; }
   }
 }

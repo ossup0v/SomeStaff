@@ -10,6 +10,6 @@ namespace App.Common.Ids
   {
     User,
     Chat,
-    ChatInvate
+    Invate
   }
 }

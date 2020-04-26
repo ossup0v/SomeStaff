@@ -22,8 +22,8 @@ namespace App.Common.Ids
         case IdKind.Chat:
           Prefix = "Chat_";
           break;
-        case IdKind.ChatInvate:
-          Prefix = "ChatInvate_";
+        case IdKind.Invate:
+          Prefix = "Invate_";
           break;
         default:
           //TODO (Osipov);
