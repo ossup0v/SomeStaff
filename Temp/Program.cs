@@ -41,11 +41,11 @@ namespace Temp
 
   public class AddChatMsg
   {
-    public TimeSpan CurretTime;
+    public DateTime CurretTime;
     public UserId Creator;
-    public ChatPassword ChatPassword;
+    public string ChatPassword;
     public bool IsOpen;
-    public AddChatMsg(UserId creator, ChatPassword chatPassword, TimeSpan currentTime, bool isOpen = false)
+    public AddChatMsg(UserId creator, string chatPassword, DateTime currentTime, bool isOpen = false)
     {
       Creator = creator;
       ChatPassword = chatPassword;
@@ -56,10 +56,10 @@ namespace Temp
 
   public class RemoveChatMsg
   {
-    public TimeSpan CurrentTime;
+    public DateTime CurrentTime;
     public ChatId ChatId;
     public UserId From;
-    public RemoveChatMsg(ChatId chatId, UserId from, TimeSpan currentTime)
+    public RemoveChatMsg(ChatId chatId, UserId from, DateTime currentTime)
     {
       From = from;
       ChatId = chatId;
@@ -81,55 +81,91 @@ namespace Temp
     }
   }
 
+  //(Osipov) maybe need to separate open chat and close chat (with password)
   public class Chat
   {
+    //(Osipov): нужно добавить битовый флаг который бы означал что может делать в чате каждая роль, ее может настраивать только создатель чата
     public readonly ChatId ChatId;
-    public ChatPassword Password { get; private set; }
+    public string Password { get; private set; }
     private bool _isOpen;
-    private TimeSpan _createdTime;
+    private DateTime _createdTime;
     private List<UserId> _blackList = new List<UserId>();
-    private Dictionary<UserId, ChatPermission> userPermission = new Dictionary<UserId, ChatPermission>();
+    private List<UserId> _usersAlreadyJoined = new List<UserId>();
+    private Dictionary<UserId, UserChatInfo> _userInfo = new Dictionary<UserId, UserChatInfo>();
     private List<ChatInvateId> _chatInvateIds = new List<ChatInvateId>();
 
     //Creator can be not one? Creator can be changed? 
-    public Chat(UserId creator, ChatPassword password, bool isOpen, TimeSpan currentTime)
+    public Chat(UserId creator, string password, bool isOpen, DateTime currentTime)
     {
-      userPermission.Add(creator, ChatPermission.Creator);
+      var newUser = new UserChat
+      {
+        Id = creator,
+      };
+      _userInfo.Add(creator, new UserChatInfo(newUser, ChatPermission.Creator));
       Password = password;
+      //maybe use special behavior for close/open chat
       _isOpen = isOpen;
       _createdTime = currentTime;
     }
 
-    public bool JoinWithInvate(UserId userToJoin, ulong invateId)
+    public ChatInvateId CreateInvate(UserId by, UserId to)
+    {
+      return new ChatInvateId(by, to);
+    }
+
+    public bool JoinWithInvate(ChatInvateId chatInvate)
     {
       return true;
     }
 
-    public bool TryToJoin(ChatPassword password, UserId userToJoin)
+    public bool TryToJoin(string password, UserId userToJoin)
     {
       if (_isOpen)
       {
         return true;
       }
-      if (password.Password == Password.Password)
+      if (password == Password)
       {
         return true;
       }
       return false;
     }
 
-    public bool TryToAdd(UserId from, UserId to, ChatPermission permission = ChatPermission.Default)
+    public bool TryToAdd(UserId from, UserId to, UserChatInfo userToAdd)
     {
+      if (_userInfo.ContainsKey(to))
+        //(Osipov): log
+        return false;
+      if (!CheckPermissions(from, userToAdd.Permission))
+        return false;
+
+      //In chat can add moder >= 
+      if (!CheckPermissions(from, ChatPermission.Default))
+        return false;
+
+      _userInfo.Add(to, userToAdd);
       return true;
     }
 
     public bool TryToRemove(UserId from, UserId to, string cause = null)
     {
-      return true;
+      //(Osipov): Log and write cause. Maybe add some static class "causes"
+      if (!CheckPermissions(from, to))
+        return false;
+      else
+        return true;
     }
 
     public bool TryToSetPermission(UserId from, UserId to, ChatPermission permission)
     {
+      var fromP = GetUserPermission(from);
+
+      //(Osipov) log?
+      if (!CheckPermissions(fromP, permission))
+        return false;
+      if (!CheckPermissions(from, to))
+        return false;
+
       return true;
     }
 
@@ -140,31 +176,105 @@ namespace Temp
       return true;
     }
 
-
     public bool TryToBanUser(UserId from, UserId to, string cause = null)
     {
       _blackList.Add(to);
+      LeaveChatDo(to, true);
       return true;
+    }
+
+    public void LeaveChat(UserId userId)
+    {
+      LeaveChatDo(userId, false);
+    }
+
+    private bool CheckPermissions(UserId from, ChatPermission toP)
+    {
+      var fromP = GetUserPermission(from);
+
+      return CheckPermissions(fromP, toP);
+    }
+
+    private bool CheckPermissions(ChatPermission fromP, UserId to)
+    {
+      var toP = GetUserPermission(to);
+
+      return CheckPermissions(fromP, toP);
+    }
+
+    private bool CheckPermissions(UserId from, UserId to)
+    {
+      var fromP = GetUserPermission(from);
+      var toP = GetUserPermission(to);
+
+      return CheckPermissions(fromP, toP);
+    }
+
+    //(Osipov): Todo [CanBeNull]
+    private ChatPermission GetUserPermission(UserId id)
+    {
+      if (!_userInfo.TryGetValue(id, out var userI))
+      {
+        //(Osipov): log, throw,         userI = default (UserInfo)?
+      }
+
+      return userI?.Permission ?? ChatPermission.Undefined;
+    }
+
+    /// <summary>
+    /// From permissions need be > to ermissions
+    /// </summary>
+    private bool CheckPermissions(ChatPermission from, ChatPermission to)
+    {
+      return from > to;
+    }
+
+    /// <param name="isFroceLeave">banned or not?</param>
+    private void LeaveChatDo(UserId userId, bool isFroceLeave)
+    {
+      var index = _usersAlreadyJoined.IndexOf(userId);
+      if (index == -1)
+      {
+        //(Osipov): Todo!
+        throw new Exception();
+        return;
+      }
+      else
+        _usersAlreadyJoined.RemoveAt(index);
+      if (isFroceLeave) { }
+      //(Osipov): One type log
+      else { }
+      //(Osipov): Second type log
     }
   }
 
+  public class UserChatInfo
+  {
+    public UserChat User;
+    public ChatPermission Permission;
+
+    public UserChatInfo(UserChat user, ChatPermission permission)
+    {
+      User = user;
+      Permission = permission;
+    }
+  }
+
+  /// <summary>
+  /// Login storaged in UserManager, this not for global User, whit only for chats
+  /// </summary>
   public class UserChat
   {
     public UserId Id;
-    public string Login;
-    public string Password;
-  }
-
-  public class ChatPassword
-  {
-    public string Password;
   }
 
   public enum ChatPermission
   {
-    Default,
-    Moderator,
-    Admin,
-    Creator
+    Undefined = 0,
+    //(Osipov): maybe we will need some space
+    Default = 5,
+    Moderator = 10,
+    Admin = 50,
+    Creator = 100
   }
 }
