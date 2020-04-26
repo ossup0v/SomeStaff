@@ -84,6 +84,7 @@ namespace Temp
   //(Osipov) maybe need to separate open chat and close chat (with password)
   public class Chat
   {
+    //(Osipov): maybe change to logger manager<TIdType, TPermissionType> or somthing like that, 
     //(Osipov): нужно добавить битовый флаг который бы означал что может делать в чате каждая роль, ее может настраивать только создатель чата
     public readonly ChatId ChatId;
     public string Password { get; private set; }
