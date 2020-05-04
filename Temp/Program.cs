@@ -9,7 +9,7 @@ namespace Temp
   public class ChatManagerActor : ReceivePersistentActor
   {
     public override string PersistenceId => throw new NotImplementedException();
-    private List<LoggerManager> _chats = new List<LoggerManager>();
+    private List<LoggerManager<ChatId, UserId>> _chats = new List<LoggerManager<ChatId, UserId>>();
 
     public ChatManagerActor()
     {
@@ -24,18 +24,18 @@ namespace Temp
 
     private void AddChat(AddChatMsg msg)
     {
-      _chats.Add(new LoggerManager(msg.Creator, msg.ChatPassword, msg.IsOpen, msg.CurretTime));
+      _chats.Add(new LoggerManager<ChatId, UserId>(msg.Creator, msg.ChatPassword, msg.IsOpen, msg.CurretTime));
     }
 
     private void RemoveChat(RemoveChatMsg msg)
     {
-      var chatToRemove = _chats.FirstOrDefault(chat => chat.ChatId == msg.ChatId);
-      if (chatToRemove == null)
-      {
-        //TODO
-      }
-      //TODO Check user permissions
-      _chats.Remove(chatToRemove);
+      //var chatToRemove = _chats.FirstOrDefault(chat => chat.ChatId == msg.ChatId);
+      //if (chatToRemove == null)
+      //{
+      //  //TODO
+      //}
+      ////TODO Check user permissions
+      //_chats.Remove(chatToRemove);
     }
   }
 

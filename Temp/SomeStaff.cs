@@ -1,7 +1,13 @@
 ﻿using App.Common.Extentions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using TeleSharp.TL;
+using TeleSharp.TL.Messages;
+using TLSharp.Core;
 
 namespace Temp.SomeStaff
 {
@@ -25,12 +31,141 @@ namespace Temp.SomeStaff
       //Console.WriteLine("Is right " + triangle.IsRightTriangle);
       //triangle = (Triangle)LibCore.GetFigure(new List<double> { 5, 4, 3 }.ToArray());
       //Console.WriteLine("Is right " + triangle.IsRightTriangle);
+      //Game.GameDo();
+      //Do().Wait();
 
-      Game.GameDo();
+
+
+      var stateMachine = new StateMachine();
+      stateMachine.AddState(new List<StateType> {
+          StateType.Fall
+        , StateType.Idle
+        , StateType.Jump
+        , StateType.Run
+        , StateType.Walk });
+      stateMachine.Do();
+      stateMachine.ChangeState(StateType.Run);
+      stateMachine.Do();
+      stateMachine.ChangeState(StateType.Walk);
+      stateMachine.Do();
+      stateMachine.Prev.Do();
+      stateMachine.Do();
+      stateMachine.ChangeState(StateType.Fall);
+      stateMachine.Do();
+      stateMachine.ChangeState(StateType.Jump);
       Console.ReadLine();
     }
-  }
 
+    public static int[,] Init2RankMass(int x, int y)
+    {
+      var mass = new int[x, y];
+      for (int i = 0; i < x; i++)
+        for (int j = 0; j < y; j++)
+          mass[i, j] = 0;
+
+      for (int i = 0, j = 0; i < x; i++, j++)
+      {
+        if (i == j)
+          mass[i, j] = 2;
+      }
+
+
+
+      var tempX = x - 1;
+      var tempY = 0;
+      for (int i = 0; i < x; i++)
+      {
+        if (mass[tempX, tempY] == 2)
+          mass[tempX, tempY] = 8;
+        else
+          mass[tempX, tempY] = 4;
+        tempX--;
+        tempY++;
+      }
+
+      return mass;
+    }
+
+    private const int apiId = 1241335;
+    private const string apiHash = "1f45fba06f7cee620765f6d43bf5978d";
+    private const string ChatName = "Sample";
+
+    public static int FindLenghtOfNumber(int x, int n)
+    {
+      var valueOfNumber = 1;
+      var stepen = 0;
+
+      while (valueOfNumber < x)
+      {
+        valueOfNumber *= n;
+        stepen++;
+      }
+
+      var lenghtOfArray = stepen;
+      lenghtOfArray = x == valueOfNumber ? lenghtOfArray + 1 : lenghtOfArray;
+      return lenghtOfArray;
+    }
+
+
+
+
+
+    public static byte[] TranslateToNBase(int num
+      , int baseOfNum)
+    {
+      var lenghtOfNum = FindLenghtOfNumber(num, baseOfNum);
+      var numInNBase = new byte[lenghtOfNum];
+      for (int i = 0; i < lenghtOfNum; i++)
+      {
+        numInNBase[i] = (byte)(num % baseOfNum);
+        num /= baseOfNum;
+      }
+
+      return numInNBase.Reverse().ToArray();
+    }
+
+    public static async Task Do()
+    {
+      var client = new TelegramClient(apiId, apiHash);
+      await client.ConnectAsync();
+      var hash = await client.SendCodeRequestAsync("79165223104");
+      var code = Console.ReadLine();
+      var user = await client.MakeAuthAsync("79165223104", hash, code);
+      var dialogs = (TLDialogs)await client.GetUserDialogsAsync();
+
+      foreach (var element in dialogs.Chats)
+      {
+        TLChat chat = element as TLChat;
+        if (chat != null && chat.Title == ChatName)
+        {
+          await client.SendMessageAsync(new TLInputPeerChat() { ChatId = chat.Id }, "Some restart message");
+        }
+      }
+    }
+
+    private static string Uri = "http://localhost:90/Kingdom/KingdomsAlive";
+
+    public static bool CheckKindgomsOnline()
+    {
+      var result = false;
+      var httpClient = new HttpClient();
+      httpClient.BaseAddress = new Uri(Uri);
+
+      var response = httpClient.GetAsync("").Result;
+      if (response.IsSuccessStatusCode)
+      {
+        var @string = response.Content.ReadAsStringAsync().Result;
+        bool.TryParse(@string, out result);
+      }
+      else
+      {
+        Console.WriteLine("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
+      }
+
+      httpClient.Dispose();
+      return result;
+    }
+  }
 
 
 
@@ -43,7 +178,7 @@ namespace Temp.SomeStaff
     {
       get
       {
-        var result = NextStates.Count == 0 ? "nope" : NextStates.Count == 1 ?  $"0" : $"0 - {NextStates.Count - 1}";
+        var result = NextStates.Count == 0 ? "nope" : NextStates.Count == 1 ? $"0" : $"0 - {NextStates.Count - 1}";
         return result;
       }
     }
