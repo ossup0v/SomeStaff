@@ -1,0 +1,11 @@
+/App.Common/bin
+/App.Common/obj
+/ClientTempldate/obj
+/ClientTempldate/bin
+/NETTemplates/obj
+/NETTemplates/bin
+/Algorithms/obj
+/Algorithms/bin
+/Temp/obj
+/Temp/bin
+/.vs
